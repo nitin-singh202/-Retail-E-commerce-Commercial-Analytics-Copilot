@@ -107,8 +107,8 @@ retail-analytics-copilot/
 ### Installation
 ```bash
 # Clone the repository
-git clone <repo-url>
-cd "retail and ecommerce commercial analysis"
+git clone https://github.com/nitin-singh202/-Retail-E-commerce-Commercial-Analytics-Copilot.git
+cd "-Retail-E-commerce-Commercial-Analytics-Copilot"
 
 # Install dependencies
 pip install -r requirements.txt
