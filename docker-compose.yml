@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: retail_analytics_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_dev
+      MYSQL_DATABASE: retail_analytics
+      MYSQL_USER: analytics_user
+      MYSQL_PASSWORD: analytics_password_dev
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./src/copilot/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password_dev"]
+      timeout: 10s
+      retries: 5
+      interval: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: retail_analytics_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=retail_analytics
+      - DB_USER=analytics_user
+      - DB_PASSWORD=analytics_password_dev
+      - DB_READONLY_USER=analytics_ro
+      - DB_READONLY_PASSWORD=analytics_ro_password_dev
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: uvicorn src.copilot.api.main:app --host 0.0.0.0 --port 8000
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: retail_analytics_ui
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    command: streamlit run src/copilot/ui/app.py --server.port 8501 --server.address 0.0.0.0
+
+volumes:
+  mysql_data:
